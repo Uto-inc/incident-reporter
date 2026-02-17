@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 
 const IncidentDetails = ({ incident, onEdit, onDelete, onBack, onUpdate }) => {
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [newStatus, setNewStatus] = useState(incident.status);
-  const [comment, setComment] = useState('');
+  const [timelineComment, setTimelineComment] = useState('');
+  const [statusComment, setStatusComment] = useState('');
+  const nextCommentIdRef = useRef(3);
   const [comments, setComments] = useState([
     {
       id: 1,
@@ -21,6 +23,12 @@ const IncidentDetails = ({ incident, onEdit, onDelete, onBack, onUpdate }) => {
     }
   ]);
 
+  const allocateCommentId = () => {
+    const id = nextCommentIdRef.current;
+    nextCommentIdRef.current += 1;
+    return id;
+  };
+
   const getPriorityBadge = (priority) => {
     const config = {
       high: { emoji: '🔴', label: '高', class: 'bg-red-100 text-red-800' },
@@ -28,7 +36,11 @@ const IncidentDetails = ({ incident, onEdit, onDelete, onBack, onUpdate }) => {
       low: { emoji: '🟢', label: '低', class: 'bg-green-100 text-green-800' }
     };
     
-    const { emoji, label, class: className } = config[priority];
+    const { emoji, label, class: className } = config[priority] ?? {
+      emoji: '⚪',
+      label: '不明',
+      class: 'bg-gray-100 text-gray-800'
+    };
     return (
       <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${className}`}>
         <span className="mr-1">{emoji}</span>
@@ -45,7 +57,11 @@ const IncidentDetails = ({ incident, onEdit, onDelete, onBack, onUpdate }) => {
       closed: { emoji: '✔️', label: '終了', class: 'bg-gray-100 text-gray-800' }
     };
     
-    const { emoji, label, class: className } = config[status];
+    const { emoji, label, class: className } = config[status] ?? {
+      emoji: '❔',
+      label: '不明',
+      class: 'bg-gray-100 text-gray-800'
+    };
     return (
       <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${className}`}>
         <span className="mr-1">{emoji}</span>
@@ -88,21 +104,21 @@ const IncidentDetails = ({ incident, onEdit, onDelete, onBack, onUpdate }) => {
     onUpdate(updatedIncident);
 
     // コメント追加
-    if (comment.trim()) {
+    if (statusComment.trim()) {
       const newComment = {
-        id: Date.now(),
+        id: allocateCommentId(),
         author: '現在のユーザー', // 実際の実装では認証ユーザー名
-        content: comment,
+        content: statusComment,
         createdAt: new Date(),
         type: 'comment'
       };
-      setComments([...comments, newComment]);
-      setComment('');
+      setComments(prev => [...prev, newComment]);
+      setStatusComment('');
     }
 
     // システムメッセージ追加
     const systemMessage = {
-      id: Date.now() + 1,
+      id: allocateCommentId(),
       author: 'システム',
       content: `ステータスが「${getStatusLabel(incident.status)}」から「${getStatusLabel(newStatus)}」に変更されました。`,
       createdAt: new Date(),
@@ -146,6 +162,7 @@ const IncidentDetails = ({ incident, onEdit, onDelete, onBack, onUpdate }) => {
           <button
             onClick={() => onEdit(incident)}
             className="px-4 py-2 bg-uto-blue text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center space-x-2"
+            aria-label={`インシデント #${incident.id} を編集`}
           >
             <span>✏️</span>
             <span>編集</span>
@@ -157,6 +174,7 @@ const IncidentDetails = ({ incident, onEdit, onDelete, onBack, onUpdate }) => {
               }
             }}
             className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center space-x-2"
+            aria-label={`インシデント #${incident.id} を削除`}
           >
             <span>🗑️</span>
             <span>削除</span>
@@ -230,28 +248,29 @@ const IncidentDetails = ({ incident, onEdit, onDelete, onBack, onUpdate }) => {
             {/* コメント追加 */}
             <div className="border-t pt-6">
               <textarea
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
+                value={timelineComment}
+                onChange={(e) => setTimelineComment(e.target.value)}
                 placeholder="コメントを入力してください..."
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uto-blue focus:border-transparent resize-none"
                 rows={3}
+                aria-label="タイムラインコメント"
               />
               <div className="flex justify-end mt-3">
                 <button
                   onClick={() => {
-                    if (comment.trim()) {
+                    if (timelineComment.trim()) {
                       const newComment = {
-                        id: Date.now(),
+                        id: allocateCommentId(),
                         author: '現在のユーザー',
-                        content: comment,
+                        content: timelineComment,
                         createdAt: new Date(),
                         type: 'comment'
                       };
-                      setComments([...comments, newComment]);
-                      setComment('');
+                      setComments(prev => [...prev, newComment]);
+                      setTimelineComment('');
                     }
                   }}
-                  disabled={!comment.trim()}
+                  disabled={!timelineComment.trim()}
                   className="px-4 py-2 bg-uto-blue text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   💬 コメント追加
@@ -280,9 +299,11 @@ const IncidentDetails = ({ incident, onEdit, onDelete, onBack, onUpdate }) => {
             ) : (
               <div className="space-y-4">
                 <select
+                  id="incident-status-update"
                   value={newStatus}
                   onChange={(e) => setNewStatus(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uto-blue focus:border-transparent"
+                  aria-label="更新後ステータス"
                 >
                   {statusOptions.map(option => (
                     <option key={option.value} value={option.value}>
@@ -292,11 +313,12 @@ const IncidentDetails = ({ incident, onEdit, onDelete, onBack, onUpdate }) => {
                 </select>
 
                 <textarea
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
+                  value={statusComment}
+                  onChange={(e) => setStatusComment(e.target.value)}
                   placeholder="変更理由やコメント（任意）"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uto-blue focus:border-transparent resize-none"
                   rows={3}
+                  aria-label="ステータス更新コメント"
                 />
 
                 <div className="flex space-x-2">
@@ -310,7 +332,7 @@ const IncidentDetails = ({ incident, onEdit, onDelete, onBack, onUpdate }) => {
                     onClick={() => {
                       setIsUpdatingStatus(false);
                       setNewStatus(incident.status);
-                      setComment('');
+                      setStatusComment('');
                     }}
                     className="flex-1 px-3 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors text-sm"
                   >

@@ -9,6 +9,8 @@ const IncidentList = ({ incidents, onSelectIncident, onEditIncident, onDeleteInc
 
   // フィルタリングとソート
   const filteredAndSortedIncidents = useMemo(() => {
+    const priorityRank = { high: 3, medium: 2, low: 1 };
+
     let filtered = incidents.filter(incident => {
       const matchesSearch = 
         incident.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -30,6 +32,9 @@ const IncidentList = ({ incidents, onSelectIncident, onEditIncident, onDeleteInc
       if (sortBy === 'createdAt' || sortBy === 'updatedAt') {
         aValue = new Date(aValue);
         bValue = new Date(bValue);
+      } else if (sortBy === 'priority') {
+        aValue = priorityRank[a.priority] ?? 0;
+        bValue = priorityRank[b.priority] ?? 0;
       }
       
       if (sortOrder === 'asc') {
@@ -49,7 +54,11 @@ const IncidentList = ({ incidents, onSelectIncident, onEditIncident, onDeleteInc
       low: { emoji: '🟢', label: '低', class: 'bg-green-100 text-green-800' }
     };
     
-    const { emoji, label, class: className } = config[priority];
+    const { emoji, label, class: className } = config[priority] ?? {
+      emoji: '⚪',
+      label: '不明',
+      class: 'bg-gray-100 text-gray-800'
+    };
     return (
       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${className}`}>
         <span className="mr-1">{emoji}</span>
@@ -66,7 +75,11 @@ const IncidentList = ({ incidents, onSelectIncident, onEditIncident, onDeleteInc
       closed: { emoji: '✔️', label: '終了', class: 'bg-gray-100 text-gray-800' }
     };
     
-    const { emoji, label, class: className } = config[status];
+    const { emoji, label, class: className } = config[status] ?? {
+      emoji: '❔',
+      label: '不明',
+      class: 'bg-gray-100 text-gray-800'
+    };
     return (
       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${className}`}>
         <span className="mr-1">{emoji}</span>
@@ -118,10 +131,11 @@ const IncidentList = ({ incidents, onSelectIncident, onEditIncident, onDeleteInc
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* 検索 */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="incident-search" className="block text-sm font-medium text-gray-700 mb-2">
               🔍 検索
             </label>
             <input
+              id="incident-search"
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -132,10 +146,11 @@ const IncidentList = ({ incidents, onSelectIncident, onEditIncident, onDeleteInc
 
           {/* ステータスフィルター */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="status-filter" className="block text-sm font-medium text-gray-700 mb-2">
               📊 ステータス
             </label>
             <select
+              id="status-filter"
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uto-blue focus:border-transparent"
@@ -150,10 +165,11 @@ const IncidentList = ({ incidents, onSelectIncident, onEditIncident, onDeleteInc
 
           {/* 優先度フィルター */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="priority-filter" className="block text-sm font-medium text-gray-700 mb-2">
               🎯 優先度
             </label>
             <select
+              id="priority-filter"
               value={filterPriority}
               onChange={(e) => setFilterPriority(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uto-blue focus:border-transparent"
@@ -167,10 +183,11 @@ const IncidentList = ({ incidents, onSelectIncident, onEditIncident, onDeleteInc
 
           {/* ソート */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="sort-order" className="block text-sm font-medium text-gray-700 mb-2">
               📅 並び順
             </label>
             <select
+              id="sort-order"
               value={`${sortBy}-${sortOrder}`}
               onChange={(e) => {
                 const [field, order] = e.target.value.split('-');
@@ -204,10 +221,19 @@ const IncidentList = ({ incidents, onSelectIncident, onEditIncident, onDeleteInc
           </div>
         ) : (
           filteredAndSortedIncidents.map(incident => (
-            <div
+            <article
               key={incident.id}
               className={getIncidentCardClass(incident.priority)}
               onClick={() => onSelectIncident(incident)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  onSelectIncident(incident);
+                }
+              }}
+              role="button"
+              tabIndex={0}
+              aria-label={`インシデント #${incident.id}: ${incident.title} の詳細を表示`}
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
@@ -250,6 +276,7 @@ const IncidentList = ({ incidents, onSelectIncident, onEditIncident, onDeleteInc
                     }}
                     className="p-2 text-gray-400 hover:text-uto-blue hover:bg-blue-50 rounded-lg transition-colors"
                     title="編集"
+                    aria-label={`インシデント #${incident.id} を編集`}
                   >
                     ✏️
                   </button>
@@ -262,12 +289,13 @@ const IncidentList = ({ incidents, onSelectIncident, onEditIncident, onDeleteInc
                     }}
                     className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                     title="削除"
+                    aria-label={`インシデント #${incident.id} を削除`}
                   >
                     🗑️
                   </button>
                 </div>
               </div>
-            </div>
+            </article>
           ))
         )}
       </div>

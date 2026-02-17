@@ -1,18 +1,19 @@
 import React, { useState } from 'react';
 
+const createInitialFormData = (data = null) => ({
+  title: data?.title || '',
+  description: data?.description || '',
+  priority: data?.priority || 'medium',
+  assignee: data?.assignee || '',
+  reporter: data?.reporter || '',
+  category: data?.category || '',
+  status: data?.status || 'open'
+});
+
 const IncidentForm = ({ onSubmit, onCancel, initialData = null, isEditing = false }) => {
-  const [formData, setFormData] = useState({
-    title: initialData?.title || '',
-    description: initialData?.description || '',
-    priority: initialData?.priority || 'medium',
-    assignee: initialData?.assignee || '',
-    reporter: initialData?.reporter || '',
-    category: initialData?.category || '',
-    status: initialData?.status || 'open'
-  });
+  const [formData, setFormData] = useState(createInitialFormData(initialData));
 
   const [errors, setErrors] = useState({});
-
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -110,10 +111,11 @@ const IncidentForm = ({ onSubmit, onCancel, initialData = null, isEditing = fals
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* タイトル */}
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="incident-title" className="block text-sm font-medium text-gray-700 mb-2">
                 📝 インシデントタイトル *
               </label>
               <input
+                id="incident-title"
                 type="text"
                 name="title"
                 value={formData.title}
@@ -122,16 +124,19 @@ const IncidentForm = ({ onSubmit, onCancel, initialData = null, isEditing = fals
                   errors.title ? 'border-red-300' : 'border-gray-300'
                 }`}
                 placeholder="例: サーバーダウン - 本番環境"
+                aria-invalid={Boolean(errors.title)}
+                aria-describedby={errors.title ? 'title-error' : undefined}
               />
-              {errors.title && <p className="text-red-500 text-sm mt-1">{errors.title}</p>}
+              {errors.title && <p id="title-error" className="text-red-500 text-sm mt-1">{errors.title}</p>}
             </div>
 
             {/* 優先度 */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="incident-priority" className="block text-sm font-medium text-gray-700 mb-2">
                 🎯 優先度
               </label>
               <select
+                id="incident-priority"
                 name="priority"
                 value={formData.priority}
                 onChange={handleChange}
@@ -147,31 +152,35 @@ const IncidentForm = ({ onSubmit, onCancel, initialData = null, isEditing = fals
 
             {/* カテゴリー */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="incident-category" className="block text-sm font-medium text-gray-700 mb-2">
                 📂 カテゴリー *
               </label>
               <select
+                id="incident-category"
                 name="category"
                 value={formData.category}
                 onChange={handleChange}
                 className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-uto-blue focus:border-transparent ${
                   errors.category ? 'border-red-300' : 'border-gray-300'
                 }`}
+                aria-invalid={Boolean(errors.category)}
+                aria-describedby={errors.category ? 'category-error' : undefined}
               >
                 <option value="">カテゴリーを選択</option>
                 {categories.map(cat => (
                   <option key={cat} value={cat}>{cat}</option>
                 ))}
               </select>
-              {errors.category && <p className="text-red-500 text-sm mt-1">{errors.category}</p>}
+              {errors.category && <p id="category-error" className="text-red-500 text-sm mt-1">{errors.category}</p>}
             </div>
 
             {/* 報告者 */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="incident-reporter" className="block text-sm font-medium text-gray-700 mb-2">
                 👤 報告者 *
               </label>
               <input
+                id="incident-reporter"
                 type="text"
                 name="reporter"
                 value={formData.reporter}
@@ -180,16 +189,19 @@ const IncidentForm = ({ onSubmit, onCancel, initialData = null, isEditing = fals
                   errors.reporter ? 'border-red-300' : 'border-gray-300'
                 }`}
                 placeholder="例: 田中太郎"
+                aria-invalid={Boolean(errors.reporter)}
+                aria-describedby={errors.reporter ? 'reporter-error' : undefined}
               />
-              {errors.reporter && <p className="text-red-500 text-sm mt-1">{errors.reporter}</p>}
+              {errors.reporter && <p id="reporter-error" className="text-red-500 text-sm mt-1">{errors.reporter}</p>}
             </div>
 
             {/* 担当者 */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="incident-assignee" className="block text-sm font-medium text-gray-700 mb-2">
                 👨‍💼 担当者
               </label>
               <input
+                id="incident-assignee"
                 type="text"
                 name="assignee"
                 value={formData.assignee}
@@ -202,10 +214,11 @@ const IncidentForm = ({ onSubmit, onCancel, initialData = null, isEditing = fals
             {/* ステータス（編集時のみ） */}
             {isEditing && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="incident-status" className="block text-sm font-medium text-gray-700 mb-2">
                   📊 ステータス
                 </label>
                 <select
+                  id="incident-status"
                   name="status"
                   value={formData.status}
                   onChange={handleChange}
@@ -223,10 +236,11 @@ const IncidentForm = ({ onSubmit, onCancel, initialData = null, isEditing = fals
 
           {/* 詳細説明 */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="incident-description" className="block text-sm font-medium text-gray-700 mb-2">
               📄 詳細説明 *
             </label>
             <textarea
+              id="incident-description"
               name="description"
               value={formData.description}
               onChange={handleChange}
@@ -235,8 +249,10 @@ const IncidentForm = ({ onSubmit, onCancel, initialData = null, isEditing = fals
                 errors.description ? 'border-red-300' : 'border-gray-300'
               }`}
               placeholder="インシデントの詳細、影響範囲、再現手順などを詳しく記載してください..."
+              aria-invalid={Boolean(errors.description)}
+              aria-describedby={errors.description ? 'description-error' : undefined}
             />
-            {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description}</p>}
+            {errors.description && <p id="description-error" className="text-red-500 text-sm mt-1">{errors.description}</p>}
           </div>
 
           {/* 送信ボタン */}

@@ -1,18 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import IncidentForm from './components/IncidentForm';
 import IncidentList from './components/IncidentList';
 import IncidentDetails from './components/IncidentDetails';
 import Header from './components/Header';
 
 function App() {
-  const [incidents, setIncidents] = useState([]);
-  const [selectedIncident, setSelectedIncident] = useState(null);
-  const [currentView, setCurrentView] = useState('list'); // 'list', 'form', 'details'
-  const [editingIncident, setEditingIncident] = useState(null);
-
-  // サンプルデータを初期化
-  useEffect(() => {
-    const sampleIncidents = [
+  const [incidents, setIncidents] = useState(() => {
+    return [
       {
         id: '001',
         title: 'サーバーダウン - 本番環境',
@@ -50,33 +44,36 @@ function App() {
         category: 'メール問題'
       }
     ];
-    setIncidents(sampleIncidents);
-  }, []);
+  });
+  const [selectedIncident, setSelectedIncident] = useState(null);
+  const [currentView, setCurrentView] = useState('list'); // 'list', 'form', 'details'
+  const [editingIncident, setEditingIncident] = useState(null);
 
   const handleCreateIncident = (newIncident) => {
+    const now = new Date();
     const incident = {
       ...newIncident,
       id: Date.now().toString(),
       status: 'open',
-      createdAt: new Date(),
-      updatedAt: new Date()
+      createdAt: now,
+      updatedAt: now
     };
-    setIncidents([incident, ...incidents]);
+    setIncidents(prev => [incident, ...prev]);
     setCurrentView('list');
   };
 
   const handleUpdateIncident = (updatedIncident) => {
-    setIncidents(incidents.map(incident => 
-      incident.id === updatedIncident.id 
-        ? { ...updatedIncident, updatedAt: new Date() }
-        : incident
+    const now = new Date();
+    const nextIncident = { ...updatedIncident, updatedAt: now };
+    setIncidents(prev => prev.map(incident =>
+      incident.id === updatedIncident.id ? nextIncident : incident
     ));
-    setSelectedIncident({ ...updatedIncident, updatedAt: new Date() });
+    setSelectedIncident(nextIncident);
     setEditingIncident(null);
   };
 
   const handleDeleteIncident = (incidentId) => {
-    setIncidents(incidents.filter(incident => incident.id !== incidentId));
+    setIncidents(prev => prev.filter(incident => incident.id !== incidentId));
     if (selectedIncident && selectedIncident.id === incidentId) {
       setSelectedIncident(null);
       setCurrentView('list');
@@ -98,6 +95,7 @@ function App() {
       case 'form':
         return (
           <IncidentForm
+            key={editingIncident?.id ?? 'new-incident'}
             onSubmit={editingIncident ? handleUpdateIncident : handleCreateIncident}
             onCancel={() => {
               setCurrentView('list');
@@ -110,6 +108,7 @@ function App() {
       case 'details':
         return (
           <IncidentDetails
+            key={selectedIncident?.id ?? 'incident-details'}
             incident={selectedIncident}
             onEdit={handleEditIncident}
             onDelete={handleDeleteIncident}
